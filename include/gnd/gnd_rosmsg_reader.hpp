@@ -42,12 +42,14 @@ namespace gnd {
 				length_ = 0;
 				header_ = 0;
 				ndata_ = 0;
+				n_ = 0;
 			}
 			rosmsgs_reader( long l ) {
 				msgs_ = 0;
 				length_ = 0;
 				header_ = 0;
 				ndata_ = 0;
+				n_ = 0;
 				allocate(l);
 			}
 			~rosmsgs_reader(){
@@ -57,10 +59,11 @@ namespace gnd {
 		// msg data
 		protected:
 			// ring buffer
-			msg_t *msgs_;
-			int length_;
-			int header_;
-			int ndata_;
+			msg_t *msgs_;	///< buffer
+			int length_;	///< length of buffer
+			int header_;	///< header index of ring buffer(not ros header)
+			int ndata_;		///< number of valid data
+			uint64_t n_;	///< latest data's sequential number in this reader (not ros header)
 
 		//  allocate, deallocate
 		public:
@@ -87,8 +90,11 @@ namespace gnd {
 			}
 		// get
 		public:
-			int ndata() {
-				return ndata_;
+			/**
+			 * \brief get sequential serial number of latest
+			 */
+			int nlatest() {
+				return n_;
 			}
 
 		// seek
@@ -108,15 +114,16 @@ namespace gnd {
 		public:
 			/**
 			 * \brief copy from ROS topic (callback for ROS topic subscription)
-			 * \memo usage: MessageReader<foo> foo_reader;
+			 * \memo usage: rosmsg_reader<foo> foo_reader;
 			 *              ros::NodeHandle nodehandle;
-			 *              nodehandle.subscribe("topic", 10, &MessageReader<foo>::rosmsg_read, foo_reader.reader_pointer());
+			 *              nodehandle.subscribe("topic", 10, &rosmsg_reader<foo>::rosmsg_read, foo_reader.reader_pointer());
 			 */
 			void rosmsg_read(const boost::shared_ptr< M const>& m ){
 				gnd_assert_void( !is_allocated() , "null buffer" );
 				header_ = (header_ + 1) % length_;
 				msgs_[header_] = *m;
 				ndata_ = ndata_ < length_ ? ndata_ + 1 : length_;
+				n_++;
 			}
 			rosmsgs_reader<M>* reader_pointer() {
 				return this;
@@ -141,7 +148,7 @@ namespace gnd {
 		public:
 			stampedmsgs_reader() {
 			}
-			~stampedmsgs_reader(){
+			virtual ~stampedmsgs_reader(){
 			}
 
 		public:
