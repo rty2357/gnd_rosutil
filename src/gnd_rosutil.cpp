@@ -7,6 +7,9 @@
 
 #include "gnd/gnd_rosutil.hpp"
 
+#include <stdint.h>
+#include <math.h>
+
 void gnd::rosutil::blockingSpinOnce(double to) {
 	ros::CallbackQueue *query;
 

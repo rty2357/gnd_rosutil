@@ -15,12 +15,12 @@
 namespace gnd {
 	namespace rosutil {
 		/**
-		 * \brief blocking spinOnce
-		 * \param [in] to : timeout
-		 * \note it uses in the case that multiple kind of data is required
+		 * @brief blocking spinOnce
+		 * @param [in] to : timeout
+		 * @note it uses in the case that multiple kind of data is required
 		 *       and missing data is not allowed
-		 * \return 0  : subscribe and call the callback function
-		 * \return !0 : timeout
+		 * @return 0  : subscribe and call the callback function
+		 * @return !0 : timeout
 		 */
 		void blockingSpinOnce(double to);
 	}

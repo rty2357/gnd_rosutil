@@ -16,9 +16,11 @@
 namespace gnd {
 	namespace rosutil {
 		template< class M >
+		class rosmsgs_storage;
+		template< class M >
 		class rosmsgs_reader;
 		template< class M >
-		class stampedmsgs_reader;
+		class rosmsgs_reader_stamped;
 	}
 }
 // <--- type declaration
@@ -28,23 +30,23 @@ namespace gnd {
 namespace gnd {
 	namespace rosutil {
 
+
 		template< class M >
-		class rosmsgs_reader {
-		// type definition
+		class rosmsgs_storage {
 		public:
 			typedef M msg_t;
 			typedef M const const_msg_t;
 
-		// constructor, destructor
+			// constructor, destructor
 		public:
-			rosmsgs_reader() {
+			rosmsgs_storage() {
 				msgs_ = 0;
 				length_ = 0;
 				header_ = 0;
 				ndata_ = 0;
 				n_ = 0;
 			}
-			rosmsgs_reader( long l ) {
+			rosmsgs_storage( long l ) {
 				msgs_ = 0;
 				length_ = 0;
 				header_ = 0;
@@ -52,11 +54,11 @@ namespace gnd {
 				n_ = 0;
 				allocate(l);
 			}
-			~rosmsgs_reader(){
+			virtual ~rosmsgs_storage(){
 				deallocate();
 			}
 
-		// msg data
+			// msg data
 		protected:
 			// ring buffer
 			msg_t *msgs_;	///< buffer
@@ -65,7 +67,7 @@ namespace gnd {
 			int ndata_;		///< number of valid data
 			uint64_t n_;	///< latest data's sequential number in this reader (not ros header)
 
-		//  allocate, deallocate
+			//  allocate, deallocate
 		public:
 			int is_allocated() {
 				return msgs_ != 0 && length_ > 0;
@@ -88,7 +90,7 @@ namespace gnd {
 				ndata_ = 0;
 				return 0;
 			}
-		// get
+			// get
 		public:
 			/**
 			 * \brief get sequential serial number of latest
@@ -97,7 +99,7 @@ namespace gnd {
 				return n_;
 			}
 
-		// seek
+			// seek
 		public:
 			int copy_latest( msg_t* m ) {
 				{ // ---> assertion
@@ -110,48 +112,35 @@ namespace gnd {
 				return 0;
 			}
 
-		// callback for ROS topic subscribe
 		public:
-			/**
-			 * \brief copy from ROS topic (callback for ROS topic subscription)
-			 * \memo usage: rosmsg_reader<foo> foo_reader;
-			 *              ros::NodeHandle nodehandle;
-			 *              nodehandle.subscribe("topic", 10, &rosmsg_reader<foo>::rosmsg_read, foo_reader.reader_pointer());
-			 */
-			void rosmsg_read(const boost::shared_ptr< M const>& m ){
-				gnd_assert_void( !is_allocated() , "null buffer" );
+			int push( const_msg_t* m ) {
+				gnd_assert( !is_allocated(), -1 , "null buffer" );
 				header_ = (header_ + 1) % length_;
 				msgs_[header_] = *m;
 				ndata_ = ndata_ < length_ ? ndata_ + 1 : length_;
 				n_++;
+				return 0;
 			}
-			rosmsgs_reader<M>* reader_pointer() {
-				return this;
-			}
+
 		};
 
 
-
-
-		/**
-		 * \brief class to subscribe and store stamped massages
-		 */
 		template< class M >
-		class stampedmsgs_reader :
-			public rosmsgs_reader<M>{
-		// type definition
-		public:
+		class rosmsgs_storage_stamped :
+				virtual public rosmsgs_storage<M> {
+				public:
 			typedef M msg_t;
 			typedef M const const_msg_t;
 
-		// constructor, destructor
-		public:
-			stampedmsgs_reader() {
+				public:
+			rosmsgs_storage_stamped() : rosmsgs_storage() {
 			}
-			virtual ~stampedmsgs_reader(){
+			rosmsgs_storage_stamped(long l) : rosmsgs_storage(l) {
+			}
+			virtual ~rosmsgs_storage_stamped() {
 			}
 
-		public:
+				public:
 			virtual int copy_at_time( msg_t* dest, double query ) {
 				{ // ---> assertion
 					gnd_assert(!dest, -1, "invalid null argument");
@@ -204,6 +193,67 @@ namespace gnd {
 				return copy_at_time(dest, query->toSec());
 			}
 
+			virtual int copy_new( msg_t* dest,  uint32_t query){
+				int ret = 0;
+				{ // ---> assertion
+					gnd_assert(!dest, -1, "invalid null argument");
+					gnd_assert(!is_allocated(), -1, "buffer null");
+					gnd_error(ndata_ <= 0, -1, "have no data");
+				} // <--- assertion
+
+				{ // ---> operation
+					if( msgs_[header_].header.seq <= query || ndata_ <= 1 ) {
+						// query time is after last scan timestamp
+						ret = 1;
+					}
+					else {
+						ret = 0;
+					}
+					// copy
+					*dest = msgs_[header_];
+				} // <--- operation
+
+				return ret;
+			}
+
+			virtual int copy_new( msg_t* dest,  double query){
+				int ret = 0;
+				{ // ---> assertion
+					gnd_assert(!dest, -1, "invalid null argument");
+					gnd_assert(!is_allocated(), -1, "buffer null");
+					gnd_error(ndata_ <= 0, -1, "have no data");
+				} // <--- assertion
+
+				{ // ---> operation
+					double query_sec = query;
+					double sec = msgs_[header_].header.stamp.toSec();
+
+					// ---> seek scan of nearest query time
+					if( sec <= query_sec || ndata_ <= 1  ) {
+						// query time is after last scan timestamp
+						ret = 1;
+					}
+					else {
+						ret = 0;
+					}
+					// copy
+					*dest = msgs_[header_];
+				} // <--- operation
+
+				return ret;
+			}
+
+			virtual int copy_new( msg_t* dest, ros::Time *query ) {
+				{ // ---> assertion
+					gnd_assert(!dest, -1, "invalid null argument");
+					gnd_assert(!query, -1, "invalid null argument");
+					gnd_assert(!is_allocated(), -1, "buffer null");
+					gnd_error(ndata_ <= 0, -1, "have no data");
+				} // <--- assertion
+
+				return copy_new(dest, query->toSec());
+			}
+
 			virtual int copy_next( msg_t* dest,  uint32_t query){
 				int ret = 0;
 				{ // ---> assertion
@@ -242,6 +292,51 @@ namespace gnd {
 				return this->copy_next(dest, query->seq);
 			}
 
+
+		};
+
+
+		template< class M >
+		class rosmsgs_reader :
+				virtual public rosmsgs_storage<M> {
+			// type definition
+
+			// callback for ROS topic subscribe
+				public:
+			/**
+			 * \brief copy from ROS topic (callback for ROS topic subscription)
+			 * \memo usage: rosmsg_reader<foo> foo_reader;
+			 *              ros::NodeHandle nodehandle;
+			 *              nodehandle.subscribe("topic", 10, &rosmsg_reader<foo>::rosmsg_read, foo_reader.reader_pointer());
+			 */
+			void rosmsg_read(const boost::shared_ptr< M const>& m ){
+				push( boost::get_pointer(m) );
+			}
+			rosmsgs_reader<M>* reader_pointer() {
+				return this;
+			}
+		};
+
+
+
+
+		/**
+		 * \brief class to subscribe and store stamped massages
+		 */
+		template< class M >
+		class rosmsgs_reader_stamped :
+				public rosmsgs_storage_stamped<M>, public rosmsgs_reader<M> {
+			// type definition
+				public:
+			typedef M msg_t;
+			typedef M const const_msg_t;
+
+			// constructor, destructor
+				public:
+			rosmsgs_reader_stamped() {
+			}
+			virtual ~rosmsgs_reader_stamped(){
+			}
 		};
 
 
