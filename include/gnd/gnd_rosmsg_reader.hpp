@@ -204,13 +204,13 @@ namespace gnd {
 				{ // ---> operation
 					if( msgs_[header_].header.seq <= query || ndata_ <= 1 ) {
 						// query time is after last scan timestamp
-						ret = 1;
+						ret = -1;
 					}
 					else {
+						// copy
+						*dest = msgs_[header_];
 						ret = 0;
 					}
-					// copy
-					*dest = msgs_[header_];
 				} // <--- operation
 
 				return ret;
@@ -231,13 +231,13 @@ namespace gnd {
 					// ---> seek scan of nearest query time
 					if( sec <= query_sec || ndata_ <= 1  ) {
 						// query time is after last scan timestamp
-						ret = 1;
+						ret = -1;
 					}
 					else {
+						// copy
+						*dest = msgs_[header_];
 						ret = 0;
 					}
-					// copy
-					*dest = msgs_[header_];
 				} // <--- operation
 
 				return ret;
