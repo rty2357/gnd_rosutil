@@ -137,6 +137,7 @@ namespace gnd {
 		public:
 			typedef M msg_t;
 			typedef M const const_msg_t;
+			typedef std_msgs::Header::_frame_id_type frame_id_t;
 
 		public:
 			rosmsgs_storage_stamped() : rosmsgs_storage() {
@@ -158,6 +159,45 @@ namespace gnd {
 				return is_updated( query_time->toSec() );
 			}
 
+		public:
+			virtual bool is_updated(uint32_t query_seq, frame_id_t *fid) {
+				int h = header_;
+				int i, j;
+				for( j = 0; j < length_ - 1 && ndata_ -1 ; j++) {
+					i = (h - j + length_) % length_;
+					if( *fid == msgs_[i].header.frame_id ) {
+						break;
+					}
+				}
+
+				if( j < length_ - 1 && ndata_ -1 ) {
+					return is_sequence_updated(query_seq, msgs_[i].header.seq);
+				}
+				else {
+					return false;
+				}
+			}
+			virtual bool is_updated(double query_time, frame_id_t *fid) {
+				int h = header_;
+				int i, j;
+				for( j = 0; j < length_ - 1 && ndata_ -1 ; j++) {
+					i = (h - j + length_) % length_;
+					if( *fid == msgs_[i].header.frame_id ) {
+						break;
+					}
+				}
+
+				if( j < length_ - 1 && ndata_ -1 ) {
+					return (msgs_[i].header.stamp.toSec() > query_time);
+				}
+				else {
+					return false;
+				}
+			}
+			virtual bool is_updated(ros::Time *query_time, frame_id_t *fid) {
+				return is_updated( query_time->toSec(), fid );
+			}
+
 
 		public:
 			virtual int copy_at_time( msg_t* dest, double query ) {
@@ -171,7 +211,7 @@ namespace gnd {
 				{ // ---> operation
 					double query_sec = query;
 					double sec = msgs_[h].header.stamp.toSec();
-					int i, j, k;
+					int i, j;
 
 					// ---> seek scan of nearest query time
 					if( sec < query_sec || ndata_ <= 1  ) {
@@ -293,19 +333,20 @@ namespace gnd {
 						ret = -1;
 					}
 					else {
-						for( j = 1; j < length_ - 1 && j < ndata_ ; j++ ) {
+						for( j = 1; j < length_ - 1 && j < ndata_ - 1 ; j++ ) {
 							i = (h - j + length_) % length_;
 							if( msgs_[i].header.seq <= query || is_sequence_overflowed(query, msgs_[i].header.seq) ) {
 								break;
 							}
 						}
 
+						i = (h - j + length_) % length_;
 						if ( msgs_[i].header.seq > query ) {
-							i = (h - j + length_) % length_;
 						}
 						else {
 							i = (h - (j - 1) + length_) % length_;
 						}
+
 						// copy
 						*dest = msgs_[i];
 					}
