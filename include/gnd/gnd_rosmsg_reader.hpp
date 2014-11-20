@@ -13,6 +13,8 @@
 #include "gnd/gnd-lib-error.h"
 #include "gnd/gnd_rosutil.hpp"
 
+#include <boost/get_pointer.hpp>
+
 // ---> type declaration
 namespace gnd {
 	namespace rosutil {
@@ -128,7 +130,6 @@ namespace gnd {
 				n_++;
 				return 0;
 			}
-
 		};
 
 
@@ -410,12 +411,15 @@ namespace gnd {
 
 
 		template< class M >
-		class rosmsgs_reader :
-				virtual public rosmsgs_storage<M> {
+		class rosmsgs_reader :	virtual public rosmsgs_storage<M> {
 			// type definition
 
+		public:
+			rosmsgs_reader() : rosmsgs_storage() {}
+			virtual ~rosmsgs_reader(){}
+
 			// callback for ROS topic subscribe
-				public:
+		public:
 			/**
 			 * \brief copy from ROS topic (callback for ROS topic subscription)
 			 * \memo usage: rosmsg_reader<foo> foo_reader;
@@ -437,16 +441,15 @@ namespace gnd {
 		 * \brief class to subscribe and store stamped massages
 		 */
 		template< class M >
-		class rosmsgs_reader_stamped :
-				public rosmsgs_storage_stamped<M>, public rosmsgs_reader<M> {
+		class rosmsgs_reader_stamped :	public rosmsgs_storage_stamped<M>, public rosmsgs_reader<M> {
 			// type definition
-				public:
+		public:
 			typedef M msg_t;
 			typedef M const const_msg_t;
 
 			// constructor, destructor
-				public:
-			rosmsgs_reader_stamped() {
+		public:
+			rosmsgs_reader_stamped() : rosmsgs_storage_stamped(), rosmsgs_reader() {
 			}
 			virtual ~rosmsgs_reader_stamped(){
 			}
