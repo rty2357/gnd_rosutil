@@ -87,7 +87,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES gnd_rosutil
-  CATKIN_DEPENDS roscpp sensor_msgs std_msgs gndlib
+#  CATKIN_DEPENDS roscpp sensor_msgs std_msgs gndlib
 #  DEPENDS system_lib
 )
 
@@ -103,9 +103,9 @@ include_directories(
 )
 
 ## Declare a cpp library
-add_library(gnd_rosutil
-   STATIC src/gnd_rosutil.cpp
-)
+#add_library(gnd_rosutil
+#   STATIC src/gnd_rosutil.cpp
+#)
 
 ## Declare a cpp executable
 # add_executable(gnd_rosutil_node src/gnd_rosutil_node.cpp)
@@ -134,16 +134,17 @@ add_library(gnd_rosutil
 # )
 
 ## Mark executables and/or libraries for installation
- install(TARGETS gnd_rosutil#  gnd_rosutil_node
-   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# install(TARGETS gnd_rosutil#  gnd_rosutil_node
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
 
 ## Mark cpp header files for installation
 install(DIRECTORY include/
    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-   FILES_MATCHING PATTERN "*.h"
+   FILES_MATCHING PATTERN "*.h" 
+    PATTERN "*.hpp"
 #   PATTERN ".svn" EXCLUDE
 )
 
