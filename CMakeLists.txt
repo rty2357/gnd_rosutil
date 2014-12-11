@@ -86,7 +86,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES gnd_rosutil
+#  LIBRARIES gnd_rosutil
 #  CATKIN_DEPENDS roscpp sensor_msgs std_msgs gndlib
 #  DEPENDS system_lib
 )
